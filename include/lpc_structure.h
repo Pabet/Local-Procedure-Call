@@ -1,0 +1,46 @@
+#include "lpc_utility.h"
+
+typedef enum {STRING, DOUBLE, INT, NOP} lpc_type;
+
+
+#define NAMELEN 48
+typedef struct{
+	char fun_name[NAMELEN];
+	int (*fun)(void *);
+}lpc_function;
+
+
+typedef struct {
+        int slen;               //toujours 4 byte
+        char string[];          //toujours 0 byte
+} lpc_string;
+
+
+typedef struct {
+        pthread_mutex_t mutex;
+        pthread_cond_t rcond;
+        pthread_cond_t wcond;
+        pid_t pid;              //nécessaire?
+        unsigned char libre;
+        char shmo_name_Pid[NAMELEN];
+
+        char fun_name[NAMELEN]; //const ? 
+        int return_v;           // -1 ou 0               
+        int err;                // si return_v = =-1 -> récuperer err (errno)           
+
+        int types[50];          //stores order and type of data in the shared memory
+                                //1:int, 2:Double, 3:lpc_string
+        int length_arr[50];     //stores the length in bytes of each entry
+                                //example: [sizeof(int), sizeof(double), sizeof(lpc_string)+slen, ...]
+        int offsets[50];        //decalage des different donne
+        
+        void *address[50];      // stocke les addresse des donnes envoyer par le client
+                                //pour mettre a jour une fois le client fini son travailler
+
+} header;
+
+
+typedef struct {
+        header hd;
+        void *data;
+} lpc_memory;
